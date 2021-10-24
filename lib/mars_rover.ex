@@ -1,67 +1,148 @@
 defmodule MarsRover do
   @moduledoc """
-  Documentation for `MarsRover` module which contains functions allowing to read the input that's given, update the robots, and print out their final state
+  Documentation for `MarsRover` module. This module takes an input made of a grid and details about robots including a starting position and a seires of moves.
+  For each robot, the module uses the initial position, applies the moves to the robot and prints out its final position, or it's last known position if the robot
+  has moved off the grid.
   """
 
-  def mars_rover(grid, robots) do
-    with {:ok, _grid} <- check_grid(grid),
-         {:ok, _robots} <- check_robots(robots) do
-      :lets_update_thos_robots
+  def get_results(grid, robots) do
+    with {:ok, grid} <- check_grid(grid),
+         {:ok, checked_robots} <- check_robots(robots) do
+      Enum.map(checked_robots, fn robot -> update_robot(robot, grid) end)
+      |> format_output()
     else
       {:error, :wrong_input_format} ->
         {:error,
          "The expected input is composed of a grid {m, n} where m and n are integers, and a list of robots details. Please check the input before trying again."}
 
+      {:error, :wrong_robot_input_format} ->
+        {:error,
+         "The expected format for a robot is a list containing details of the initial position and a string representing a series of moves. Please check the input matches the required format before trying again."}
+
       {:error, :no_robots} ->
         {:error, "Please provide the details for at least one robot before trying again."}
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 
   @doc """
-  Check grid format
+  Apply move
 
   ## Examples
 
-      iex> MarsRover.check_grid({4, 8})
-      {:ok, {4, 8}}
+      iex> MarsRover.apply_move("L", %{x: 2, y: 3, o: "N"})
+      %{x: 2, y: 3, o: "W"}
 
-      iex> MarsRover.check_grid({4, "eight"})
-      {:error, :wrong_input_format}
+      iex> MarsRover.apply_move("R", %{x: 2, y: 3, o: "N"})
+      %{x: 2, y: 3, o: "E"}
 
-      iex> MarsRover.check_grid([4, 8])
-      {:error, :wrong_input_format}
+      iex> MarsRover.apply_move("F", %{x: 2, y: 3, o: "S"})
+      %{x: 2, y: 2, o: "S"}
 
   """
 
-  def check_grid(grid = {grid_dim_1, grid_dim_2})
-      when is_integer(grid_dim_1) and is_integer(grid_dim_2) do
+  def apply_move("L", current_position) do
+    new_orientation =
+      case String.upcase(current_position.o) do
+        "N" -> "W"
+        "E" -> "N"
+        "S" -> "E"
+        "W" -> "S"
+      end
+
+    Map.put(current_position, :o, new_orientation)
+  end
+
+  def apply_move("R", current_position) do
+    new_orientation =
+      case String.upcase(current_position.o) do
+        "N" -> "E"
+        "E" -> "S"
+        "S" -> "W"
+        "W" -> "N"
+      end
+
+    Map.put(current_position, :o, new_orientation)
+  end
+
+  def apply_move("F", current_position) do
+    {key_to_update, new_value} =
+      case String.upcase(current_position.o) do
+        "N" -> {:y, current_position.y + 1}
+        "E" -> {:x, current_position.x + 1}
+        "S" -> {:y, current_position.y - 1}
+        "W" -> {:x, current_position.x - 1}
+      end
+
+    Map.put(current_position, key_to_update, new_value)
+  end
+
+  defp check_grid(grid = {grid_dim_1, grid_dim_2})
+       when is_integer(grid_dim_1) and is_integer(grid_dim_2) do
     {:ok, grid}
   end
 
-  def check_grid(_grid), do: {:error, :wrong_input_format}
+  defp check_grid(_grid), do: {:error, :wrong_input_format}
 
-  @doc """
-  Check robots format
+  defp check_robots([]), do: {:error, :no_robots}
 
-  ## Examples
+  defp check_robots(robots) when is_list(robots) do
+    Enum.reduce_while(robots, {:ok, []}, fn robot, {:ok, acc} ->
+      case robot do
+        {position, moves} when is_list(position) and length(position) == 3 and is_binary(moves) ->
+          {:cont, {:ok, acc ++ [robot]}}
 
-      iex> MarsRover.check_robots([])
-      {:error, :no_robots}
+        _ ->
+          {:halt, {:error, :wrong_robot_input_format}}
+      end
+    end)
+  end
 
-      iex> MarsRover.check_robots(["robot_1"])
-      {:ok, ["robot_1"]}
+  defp check_robots(_robots), do: {:error, :wrong_input_format}
 
-      iex> MarsRover.check_robots(["robot_1", "robot_2"])
-      {:ok, ["robot_1", "robot_2"]}
+  defp update_robot({initial_position = [x_position, y_position, orientation], moves}, grid)
+       when is_list(initial_position) and is_binary(moves) do
+    formatted_initial_position = %{x: x_position, y: y_position, o: orientation}
 
-      iex> MarsRover.check_robots(%{robot: "robot"})
-      {:error, :wrong_input_format}
+    if is_within_grid?(formatted_initial_position, grid) do
+      handle_moves(moves, formatted_initial_position, grid)
+    else
+      %{last_position: formatted_initial_position, lost: true}
+    end
+  end
 
-  """
+  defp is_within_grid?(%{x: x, y: y}, {dim_1, dim_2}) do
+    x in 0..dim_1 and y in 0..dim_2
+  end
 
-  def check_robots([]), do: {:error, :no_robots}
+  defp handle_moves(moves, initial_position, grid) do
+    Enum.reduce_while(
+      String.split(moves, "", trim: true),
+      %{last_position: initial_position, lost: false},
+      fn
+        move, acc ->
+          new_position = apply_move(move, acc.last_position)
 
-  def check_robots(robots) when is_list(robots), do: {:ok, robots}
+          if is_within_grid?(new_position, grid) do
+            {:cont, Map.put(acc, :last_position, new_position)}
+          else
+            {:halt, Map.put(acc, :lost, true)}
+          end
+      end
+    )
+  end
 
-  def check_robots(_robots), do: {:error, :wrong_input_format}
+  defp format_output(robots_final_data) do
+    Enum.each(robots_final_data, fn %{last_position: %{x: x, y: y, o: o}, lost: lost} ->
+      formatted_position = "(#{x}, #{y}, #{o})"
+
+      if lost do
+        IO.puts("#{formatted_position} LOST")
+      else
+        IO.puts("#{formatted_position}")
+      end
+    end)
+  end
 end
