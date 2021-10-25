@@ -41,6 +41,9 @@ defmodule MarsRover do
       iex> MarsRover.apply_move("F", %{x: 2, y: 3, o: "S"})
       %{x: 2, y: 2, o: "S"}
 
+      iex> MarsRover.apply_move("A", %{x: 2, y: 3, o: "S"})
+      %{x: 2, y: 3, o: "S"}
+
   """
 
   def apply_move("L", current_position) do
@@ -78,6 +81,8 @@ defmodule MarsRover do
 
     Map.put(current_position, key_to_update, new_value)
   end
+
+  def apply_move(_, current_position), do: current_position
 
   defp check_grid(grid = {grid_dim_1, grid_dim_2})
        when is_integer(grid_dim_1) and is_integer(grid_dim_2) do
