@@ -1,21 +1,19 @@
 # MarsRover
 
-**TODO: Add description**
+**Based on an input, moves robots on Mars and returns their final and / or final position**
 
-## Installation
+## Input format
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `mars_rover` to your list of dependencies in `mix.exs`:
+The input is made of two parts:
 
-```elixir
-def deps do
-  [
-    {:mars_rover, "~> 0.1.0"}
-  ]
-end
-```
+1. A grid: a tuple of two integers determining the area where robots can move without being lost
+2. A list of robots details: a list made of tuple, themselves made of:
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/mars_rover](https://hexdocs.pm/mars_rover).
+- The initial robot position: a list of two integers for the location, and a one letter string for the orientation
+- The robot's moves: a string
 
+## Running the code
+
+1. Checkout the code from GitHub (https://github.com/chadeyrasal/mars-rover)
+2. Open an iex shell `iex -S mix`
+3. Run `MarsRover.get_results(grid, robots)` where `grid` and `robots` match the above requirements
