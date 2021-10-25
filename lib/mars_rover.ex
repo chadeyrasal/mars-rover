@@ -1,6 +1,6 @@
 defmodule MarsRover do
   @moduledoc """
-  Documentation for `MarsRover` module. This module takes an input made of a grid and details about robots including a starting position and a seires of moves.
+  Documentation for `MarsRover` module. This module takes an input made of a grid and details about robots including a starting position and a series of moves.
   For each robot, the module uses the initial position, applies the moves to the robot and prints out its final position, or it's last known position if the robot
   has moved off the grid.
   """
@@ -15,11 +15,11 @@ defmodule MarsRover do
         {:error,
          "The expected input is composed of a grid {m, n} where m and n are integers, and a list of robots details. Please check the input before trying again."}
 
-      {:error, :wrong_robot_input_format} ->
+      {:error, :wrong_robot_format} ->
         {:error,
-         "The expected format for a robot is a list containing details of the initial position and a string representing a series of moves. Please check the input matches the required format before trying again."}
+         "The expected format for a robot is a 3 items list containing details of the initial position and a string representing a series of moves. Please check the input matches the required format before trying again."}
 
-      {:error, :no_robots} ->
+      {:error, :no_robots_details} ->
         {:error, "Please provide the details for at least one robot before trying again."}
 
       {:error, error} ->
@@ -35,8 +35,8 @@ defmodule MarsRover do
       iex> MarsRover.apply_move("L", %{x: 2, y: 3, o: "N"})
       %{x: 2, y: 3, o: "W"}
 
-      iex> MarsRover.apply_move("R", %{x: 2, y: 3, o: "N"})
-      %{x: 2, y: 3, o: "E"}
+      iex> MarsRover.apply_move("R", %{x: 2, y: 3, o: "E"})
+      %{x: 2, y: 3, o: "S"}
 
       iex> MarsRover.apply_move("F", %{x: 2, y: 3, o: "S"})
       %{x: 2, y: 2, o: "S"}
@@ -67,13 +67,13 @@ defmodule MarsRover do
     Map.put(current_position, :o, new_orientation)
   end
 
-  def apply_move("F", current_position) do
+  def apply_move("F", current_position = %{x: x, y: y, o: o}) do
     {key_to_update, new_value} =
-      case String.upcase(current_position.o) do
-        "N" -> {:y, current_position.y + 1}
-        "E" -> {:x, current_position.x + 1}
-        "S" -> {:y, current_position.y - 1}
-        "W" -> {:x, current_position.x - 1}
+      case String.upcase(o) do
+        "N" -> {:y, y + 1}
+        "E" -> {:x, x + 1}
+        "S" -> {:y, y - 1}
+        "W" -> {:x, x - 1}
       end
 
     Map.put(current_position, key_to_update, new_value)
@@ -86,7 +86,7 @@ defmodule MarsRover do
 
   defp check_grid(_grid), do: {:error, :wrong_input_format}
 
-  defp check_robots([]), do: {:error, :no_robots}
+  defp check_robots([]), do: {:error, :no_robots_details}
 
   defp check_robots(robots) when is_list(robots) do
     Enum.reduce_while(robots, {:ok, []}, fn robot, {:ok, acc} ->
@@ -95,21 +95,20 @@ defmodule MarsRover do
           {:cont, {:ok, acc ++ [robot]}}
 
         _ ->
-          {:halt, {:error, :wrong_robot_input_format}}
+          {:halt, {:error, :wrong_robot_format}}
       end
     end)
   end
 
   defp check_robots(_robots), do: {:error, :wrong_input_format}
 
-  defp update_robot({initial_position = [x_position, y_position, orientation], moves}, grid)
-       when is_list(initial_position) and is_binary(moves) do
-    formatted_initial_position = %{x: x_position, y: y_position, o: orientation}
+  defp update_robot({[x_pos, y_pos, orientation], moves}, grid) do
+    initial_position = %{x: x_pos, y: y_pos, o: orientation}
 
-    if is_within_grid?(formatted_initial_position, grid) do
-      handle_moves(moves, formatted_initial_position, grid)
+    if is_within_grid?(initial_position, grid) do
+      handle_moves(moves, initial_position, grid)
     else
-      %{last_position: formatted_initial_position, lost: true}
+      %{last_position: initial_position, lost: true}
     end
   end
 

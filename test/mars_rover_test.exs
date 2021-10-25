@@ -38,6 +38,19 @@ defmodule MarsRoverTest do
              """
     end
 
+    test "if the initial position if off grid, it outputs the given position and the lost label",
+         %{grid: grid} do
+      robot = [{[6, 0, "S"], "FFRLF"}]
+
+      execute = fn ->
+        MarsRover.get_results(grid, robot)
+      end
+
+      assert capture_io(execute) == """
+             (6, 0, S) LOST
+             """
+    end
+
     test "returns an error if the grid input is not formatted appropriately", %{robots: robots} do
       grid = {4, "eight"}
 
@@ -68,7 +81,7 @@ defmodule MarsRoverTest do
       {:error, error} = MarsRover.get_results(grid, robot)
 
       assert error ==
-               "The expected format for a robot is a list containing details of the initial position and a string representing a series of moves. Please check the input matches the required format before trying again."
+               "The expected format for a robot is a 3 items list containing details of the initial position and a string representing a series of moves. Please check the input matches the required format before trying again."
     end
   end
 end
