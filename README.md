@@ -1,6 +1,6 @@
 # MarsRover
 
-**Based on an input, moves robots on Mars and returns their final and / or final position**
+**Based on an input, moves robots on Mars and returns their final or last known position**
 
 ## Input format
 
